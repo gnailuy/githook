@@ -17,7 +17,7 @@ function stop_service {
 
 function usage {
     echo "Usage:"
-    echo -e "\t`basename $0` {start|stop}"
+    echo -e "\t`basename $0` {start|stop|restart}"
 }
 
 if [ -z "$1" ]; then
@@ -26,4 +26,7 @@ elif [ "$1" == "start" ]; then
     start_service
 elif [ "$1" == "stop" ]; then
     stop_service
+elif [ "$1" == "restart" ]; then
+    stop_service
+    start_service
 fi
