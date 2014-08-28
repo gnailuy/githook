@@ -1,6 +1,7 @@
 require 'sinatra'
 require 'json'
 
+set :bind, '0.0.0.0'
 set :port, 20182
 
 post '/payload' do
@@ -10,6 +11,10 @@ post '/payload' do
   push = JSON.parse(params[:payload])
   puts "Received JSON: #{push.inspect}"
   system('bash update.sh >> update.log 2>&1')
+end
+
+post '/' do
+  "Hello Ping Test."
 end
 
 get '*' do
