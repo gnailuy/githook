@@ -4,7 +4,7 @@ require 'json'
 set :bind, '0.0.0.0'
 set :port, 20182
 
-post '/payload' do
+post '/push' do
   request.body.rewind
   payload_body = request.body.read
   verify_signature(payload_body)
