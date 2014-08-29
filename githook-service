@@ -29,4 +29,6 @@ elif [ "$1" == "stop" ]; then
 elif [ "$1" == "restart" ]; then
     stop_service
     start_service
+else
+    usage
 fi
