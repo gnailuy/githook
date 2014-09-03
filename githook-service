@@ -4,16 +4,16 @@ PIDFILE="/var/run/githook/pid"
 EXEC="/usr/bin/ruby"
 DEPLOY_PATH="/home/yuliang/githook"
 SCRIPT="$DEPLOY_PATH/server.rb"
-LOG="server.log"
+LOG="$DEPLOY_PATH/server.log"
 
 function start_service {
     echo Starting Service...
-    start-stop-daemon --start --make-pidfile --pidfile $PIDFILE --chdir . --startas $EXEC -- $SCRIPT >> $LOG 2>&1 &
+    cd $DEPLOY_PATH; start-stop-daemon --start --make-pidfile --pidfile $PIDFILE --chdir . --startas $EXEC -- $SCRIPT >> $LOG 2>&1 &
 }
 
 function stop_service {
     echo Stop Service...
-    start-stop-daemon --stop --pidfile $PIDFILE --retry TERM/30/KILL/5
+    cd $DEPLOY_PATH; start-stop-daemon --stop --pidfile $PIDFILE --retry TERM/30/KILL/5
 }
 
 function usage {
