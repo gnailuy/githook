@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PIDFILE="/var/run/githook/pid"
+PIDFILE="/var/run/githook.pid"
 EXEC="/usr/bin/ruby"
 DEPLOY_PATH="/home/yuliang/githook"
 SCRIPT="$DEPLOY_PATH/server.rb"
