@@ -2,7 +2,8 @@
 
 PIDFILE="/var/run/githook/pid"
 EXEC="/usr/bin/ruby"
-SCRIPT="server.rb"
+DEPLOY_PATH="/home/yuliang/githook"
+SCRIPT="$DEPLOY_PATH/server.rb"
 LOG="server.log"
 
 function start_service {
