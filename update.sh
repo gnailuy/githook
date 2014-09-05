@@ -4,14 +4,17 @@ WORKDIR=/home/yuliang/
 GITROOT=$WORKDIR/gnailuy.com/
 WBEROOT=$WORKDIR/webroot/
 
+GIT_BIN=/usr/bin/git
+JEKYLL_BIN=/usr/local/bin/jekyll
+
 # Update Git Repo
 cd $GITROOT
-git pull
-git submodule update
+$GIT_BIN pull
+$GIT_BIN submodule update
 
 # Build Site
 cd $GITROOT
-jekyll build
+$JEKYLL_BIN build
 
 # Deploy Site
 rm -r $WBEROOT/*
