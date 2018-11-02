@@ -1,9 +1,10 @@
 #!/bin/bash
 
-PIDFILE="/var/run/githook.pid"
-EXEC="/usr/bin/ruby"
-TOKEN_PATH="/etc/environment.githook"
 DEPLOY_PATH="/home/yuliang/githook"
+TOKEN_PATH="/etc/environment.githook"
+
+EXEC="/usr/bin/ruby"
+PIDFILE="/var/run/githook.pid"
 SCRIPT="$DEPLOY_PATH/server.rb"
 LOG="$DEPLOY_PATH/server.log"
 
@@ -36,3 +37,4 @@ elif [ "$1" == "restart" ]; then
 else
     usage
 fi
+

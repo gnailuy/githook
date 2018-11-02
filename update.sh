@@ -19,3 +19,4 @@ $JEKYLL_BIN build
 # Deploy Site
 rm -r $WBEROOT/*
 mv $GITROOT/_site/* $WBEROOT
+
