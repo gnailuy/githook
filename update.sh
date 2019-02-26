@@ -1,11 +1,11 @@
 #!/bin/bash
 
-WORKDIR=/home/yuliang/
-GITROOT=$WORKDIR/gnailuy.com/
-WBEROOT=$WORKDIR/webroot/
+WORKDIR=/app
+GITROOT=$WORKDIR/gnailuy.com
+WBEROOT=$WORKDIR/webroot
 
-GIT_BIN=/usr/bin/git
-JEKYLL_BIN=/usr/local/bin/jekyll
+GIT_BIN=git
+JEKYLL_BIN=jekyll
 
 # Update Git Repo
 cd $GITROOT
@@ -18,5 +18,5 @@ $JEKYLL_BIN build
 
 # Deploy Site
 rm -r $WBEROOT/*
-mv $GITROOT/_site/* $WBEROOT
+mv $GITROOT/_site/* $WBEROOT/
 

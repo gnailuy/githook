@@ -10,7 +10,7 @@ post '/push' do
   verify_signature(payload_body)
   push = JSON.parse(payload_body)
   puts "Received JSON: #{push.inspect}"
-  system('sudo -u ' + ENV['GITHOOK_USER'] + ' bash update.sh >> update.log 2>&1') if "refs/heads/master" == push['ref']
+  system('sh update.sh >> logs/update.log 2>&1') if "refs/heads/master" == push['ref']
 end
 
 get '*' do

@@ -1,0 +1,4 @@
+# Github Webhook Key, put this file in /etc/
+GITHUB_TOKEN="your_webhook_key"
+GITHOOK_USER=yourusername
+

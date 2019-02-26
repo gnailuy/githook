@@ -1,12 +1,15 @@
 #!/bin/bash
 
 DEPLOY_PATH="/home/yuliang/githook"
-TOKEN_PATH="/etc/environment.githook"
+TOKEN_PATH="/etc/environment.sh"
 
 EXEC="/usr/bin/ruby"
 PIDFILE="/var/run/githook.pid"
 SCRIPT="$DEPLOY_PATH/server.rb"
-LOG="$DEPLOY_PATH/server.log"
+LOG_PATH="$DEPLOY_PATH/logs"
+LOG="$LOG_PATH/server.log"
+
+mkdir -p $LOG_PATH
 
 function start_service {
     echo Starting Service...
