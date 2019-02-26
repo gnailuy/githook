@@ -30,7 +30,7 @@ docker build -t gnailuy/githook .
 
 ``` bash
 WORKDIR=/home/yuliang/
-docker run -d --name githook --env-file /etc/environment.rc -v ${WORKDIR}/gnailuy.com/:/app/gnailuy.com/ -v ${WORKDIR}/webroot:/app/webroot/ -p 20182:20182 -t gnailuy/githook
+docker run -d --name githook --env-file /etc/environment.rc -v ${WORKDIR}/gnailuy.com/:/app/gnailuy.com/ -v ${WORKDIR}/webroot:/app/webroot/ -v ${WORKDIR}/logs:/app/logs/ -p 20182:20182 -t gnailuy/githook
 ```
 
 ### Run Githook as a local service
