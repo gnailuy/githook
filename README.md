@@ -3,40 +3,49 @@ githook
 
 Github Hook Service for [gnailuy.com](http://gnailuy.com/).
 
-Please read [this blog post](http://gnailuy.com/jekyll/2014/08/29/github-webhook/) (in Chinese).
-
-### Prepare the site
+### Prepare the site directory
 
 ``` bash
-WORKDIR=/home/yuliang/
+WORKDIR=/home/yourusername/
 mkdir -p $WORKDIR/webroot
+mkdir -p $WORKDIR/redis_data
+mkdir -p $WORKDIR/logs
 
 git clone https://github.com/gnailuy/gnailuy.com.git
 cd gnailuy.com
 git submodule init
 git submodule update
 
-# Copy environment.rc to current directory and edit it
+# Copy `environment.rc` to current directory and edit it according to your configuration
 ```
 
 ### Build the image
 
 ``` bash
-# Build gnailuy/jekyll first. See http://github.com/gnailuy/gnailuy.com/
-docker build -t gnailuy/githook .
+# Build `gnailuy/jekyll` first. See: http://github.com/gnailuy/gnailuy.com/
+
+# In `server`
+docker build -t gnailuy/githook_server .
+
+# In `worker`
+docker build -t gnailuy/githook_worker .
 ```
 
 ### Run on Docker
 
 ``` bash
-WORKDIR=/home/yuliang/
-docker run -d --name githook --env-file ./environment.rc -v ${WORKDIR}/gnailuy.com/:/app/gnailuy.com/ -v ${WORKDIR}/webroot:/app/webroot/ -v ${WORKDIR}/logs:/app/logs/ -p 20182:20182 -t gnailuy/githook
-```
+WORKDIR=/home/yourusername/
 
-### Run Githook as a local service
+# Create network (run once)
+docker network create githook
 
-``` bash
-# Put environment.sh in /etc/
-./githook-service start
+# Run redis
+docker run -d --network githook --name redis -v ${WORKDIR}/githook/redis/:/usr/local/etc/redis/ -v ${WORKDIR}/redis_data:/data -t redis
+
+# Run the worker
+docker run -d --network githook --name githook_worker -v ${WORKDIR}/gnailuy.com/:/app/gnailuy.com/ -v ${WORKDIR}/webroot:/app/webroot/ -v ${WORKDIR}/logs:/app/logs/ -t gnailuy/githook_worker
+
+# Run the server
+docker run -d --network githook --name githook_server --env-file ./environment.rc -v ${WORKDIR}/logs:/app/logs/ -p 20182:20182 -t gnailuy/githook_server
 ```
 
