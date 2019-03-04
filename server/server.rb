@@ -1,20 +1,23 @@
 require 'json'
+require 'redis'
 require 'sinatra'
 
 set :bind, '0.0.0.0'
 set :port, 20182
+
+redis = Redis.new(host: 'redis', port: 6379, db: 0)
 
 post '/push' do
   request.body.rewind
   payload_body = request.body.read
   verify_signature(payload_body)
   push = JSON.parse(payload_body)
-  puts "Received JSON: #{push.inspect}"
-  system('sh update.sh >> logs/update.log 2>&1') if "refs/heads/master" == push['ref']
+  puts 'Received JSON: #{push.inspect}'
+  redis.lpush('githook', Time.now.getutc) if 'refs/heads/master' == push['ref']
 end
 
 get '*' do
-  "What do you want? Nothing here..."
+  'What do you want? Nothing here...'
 end
 
 def verify_signature(payload_body)

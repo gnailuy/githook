@@ -4,8 +4,7 @@ FROM gnailuy/jekyll
 WORKDIR /app
 
 COPY . .
-RUN mkdir -p logs && apk add --no-cache git openssh && gem install sinatra
+RUN mkdir -p logs && apk add --no-cache git openssh && gem install sinatra redis
 
-EXPOSE 20182
-ENTRYPOINT ["ruby", "server.rb"]
+ENTRYPOINT ["ruby", "worker.rb"]
 
