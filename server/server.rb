@@ -13,11 +13,15 @@ post '/push' do
   verify_signature(payload_body)
   push = JSON.parse(payload_body)
   puts 'Received JSON: #{push.inspect}'
-  redis.lpush('githook', Time.now.getutc) if 'refs/heads/master' == push['ref']
+  qlen = redis.lpush('githook', Time.now.getutc) if 'refs/heads/master' == push['ref']
+
+  content_type :json
+  { 'msg' => 'OK', 'queue_length' => qlen }.to_json
 end
 
 get '*' do
-  'What do you want? Nothing here...'
+  content_type :json
+  { 'msg' => 'What do you want? Nothing here...' }.to_json
 end
 
 def verify_signature(payload_body)
