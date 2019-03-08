@@ -1,7 +1,7 @@
 require 'logger'
 require 'redis'
 
-$log = Logger.new('githook_worker.log', 0, 100 * 1024 * 1024)
+$log = Logger.new('logs/githook_worker.log', 0, 100 * 1024 * 1024)
 $log.level = Logger::INFO
 
 redis = Redis.new(host: 'redis', port: 6379, db: 0)

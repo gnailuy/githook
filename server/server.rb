@@ -6,7 +6,7 @@ require 'sinatra'
 set :bind, '0.0.0.0'
 set :port, 20182
 
-$log = Logger.new('githook_server.log', 0, 100 * 1024 * 1024)
+$log = Logger.new('logs/githook_server.log', 0, 100 * 1024 * 1024)
 $log.level = Logger::WARN
 
 redis = Redis.new(host: 'redis', port: 6379, db: 0)
