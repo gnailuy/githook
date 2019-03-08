@@ -9,6 +9,7 @@ set :port, 20182
 $log = Logger.new('logs/githook_server.log', 0, 100 * 1024 * 1024)
 $log.level = Logger::INFO
 
+QUEUENAME = 'githook'
 redis = Redis.new(host: 'redis', port: 6379, db: 0)
 
 post '/push' do
@@ -24,7 +25,7 @@ post '/push' do
 
   push = JSON.parse(payload_body)
   $log.info("Received JSON: #{push.inspect}")
-  qlen = redis.lpush('githook', Time.now.getutc) if 'refs/heads/master' == push['ref']
+  qlen = redis.lpush(QUEUENAME, Time.now.getutc) if 'refs/heads/master' == push['ref']
 
   { 'msg' => 'OK', 'queue_length' => qlen }.to_json
 end
