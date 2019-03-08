@@ -7,7 +7,7 @@ set :bind, '0.0.0.0'
 set :port, 20182
 
 $log = Logger.new('logs/githook_server.log', 0, 100 * 1024 * 1024)
-$log.level = Logger::WARN
+$log.level = Logger::INFO
 
 redis = Redis.new(host: 'redis', port: 6379, db: 0)
 
@@ -16,7 +16,7 @@ post '/push' do
   payload_body = request.body.read
   verify_signature(payload_body)
   push = JSON.parse(payload_body)
-  $log.info('Received JSON: #{push.inspect}')
+  $log.info("Received JSON: #{push.inspect}")
   qlen = redis.lpush('githook', Time.now.getutc) if 'refs/heads/master' == push['ref']
 
   content_type :json
@@ -24,7 +24,7 @@ post '/push' do
 end
 
 get '*' do
-  $log.warn('Unwanted request: #{@env["sinatra.route"]}')
+  $log.warn("Unwanted request: #{request.path_info}")
   content_type :json
   { 'msg' => 'What do you want? Nothing here...' }.to_json
 end
