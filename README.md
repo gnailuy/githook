@@ -40,12 +40,12 @@ WORKDIR=/home/yourusername/
 docker network create githook
 
 # Run redis
-docker run -d --network githook --name redis -v ${WORKDIR}/githook/redis/:/usr/local/etc/redis/ -v ${WORKDIR}/redis_data:/data -t redis
+docker run -d --restart unless-stopped --network githook --name redis -v ${WORKDIR}/githook/redis/:/usr/local/etc/redis/ -v ${WORKDIR}/redis_data:/data -t redis
 
 # Run the worker
-docker run -d --network githook --name githook_worker -v ${WORKDIR}/gnailuy.com/:/app/gnailuy.com/ -v ${WORKDIR}/webroot:/app/webroot/ -v ${WORKDIR}/logs:/app/logs/ -t gnailuy/githook_worker
+docker run -d --restart unless-stopped --network githook --name githook_worker -v ${WORKDIR}/gnailuy.com/:/app/gnailuy.com/ -v ${WORKDIR}/webroot:/app/webroot/ -v ${WORKDIR}/logs:/app/logs/ -t gnailuy/githook_worker
 
 # Run the server
-docker run -d --network githook --name githook_server --env-file ./environment.rc -v ${WORKDIR}/logs:/app/logs/ -p 20182:20182 -t gnailuy/githook_server
+docker run -d --restart unless-stopped --network githook --name githook_server --env-file ./environment.rc -v ${WORKDIR}/logs:/app/logs/ -p 20182:20182 -t gnailuy/githook_server
 ```
 
