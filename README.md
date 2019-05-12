@@ -49,3 +49,9 @@ docker run -d --restart unless-stopped --network githook --name githook_worker -
 docker run -d --restart unless-stopped --network githook --name githook_server --env-file ./environment.rc -v ${WORKDIR}/logs:/app/logs/ -p 20182:20182 -t gnailuy/githook_server
 ```
 
+### Connect to redis
+
+``` bash
+docker run -it --network githook --rm redis redis-cli -h redis
+```
+
