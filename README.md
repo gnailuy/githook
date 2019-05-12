@@ -40,7 +40,7 @@ WORKDIR=/home/yourusername/
 docker network create githook
 
 # Run redis
-docker run -d --restart unless-stopped --network githook --name redis -v ${WORKDIR}/githook/redis/:/usr/local/etc/redis/ -v ${WORKDIR}/redis_data:/data -t redis
+docker run -d --restart unless-stopped --network githook --name redis -v ${WORKDIR}/githook/redis/redis.conf:/etc/redis/redis.conf -v ${WORKDIR}/redis_data:/data -t redis redis-server /etc/redis/redis.conf
 
 # Run the worker
 docker run -d --restart unless-stopped --network githook --name githook_worker -v ${WORKDIR}/gnailuy.com/:/app/gnailuy.com/ -v ${WORKDIR}/webroot:/app/webroot/ -v ${WORKDIR}/logs:/app/logs/ -t gnailuy/githook_worker
