@@ -7,16 +7,17 @@ Github Hook Service for [gnailuy.com](http://gnailuy.com/).
 
 ``` bash
 WORKDIR=/home/yourusername/
+
 mkdir -p $WORKDIR/webroot
 mkdir -p $WORKDIR/redis_data
 mkdir -p $WORKDIR/logs
 
 git clone https://github.com/gnailuy/gnailuy.com.git
-cd gnailuy.com
+cd $WORKDIR/gnailuy.com
 git submodule init
 git submodule update
 
-# Copy `environment.rc` to current directory and edit it according to your configuration
+# Copy `environment.rc` to $WORKDIR and edit it according to your configuration
 ```
 
 ### Build the image
@@ -24,10 +25,10 @@ git submodule update
 ``` bash
 # Build `gnailuy/jekyll` first. See: http://github.com/gnailuy/gnailuy.com/
 
-# In `server`
+# In the `server` directory
 docker build -t gnailuy/githook_server .
 
-# In `worker`
+# In the `worker` directory
 docker build -t gnailuy/githook_worker .
 ```
 
