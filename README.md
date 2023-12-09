@@ -50,6 +50,9 @@ docker run -d --restart unless-stopped --network githook --name githook_worker -
 docker run -d --restart unless-stopped --network githook --name githook_server --env-file ./environment.rc -v ${WORKDIR}/logs:/app/logs/ -p 20182:20182 -t gnailuy/githook_server
 ```
 
+Note for myself: I put the nginx server to the same network `githook` and use the nginx server to proxy the webhook requests now.
+It's not necessary to bind the `githook_server` port to the host and I've closed the port in the firewall.
+
 ### Connect to redis
 
 ``` bash
