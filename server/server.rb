@@ -3,6 +3,8 @@ require 'logger'
 require 'redis'
 require 'sinatra'
 
+use Rack::RewindableInput::Middleware
+
 set :bind, '0.0.0.0'
 set :port, 20182
 
