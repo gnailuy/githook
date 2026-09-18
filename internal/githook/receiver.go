@@ -24,9 +24,15 @@ type Enqueuer interface {
 	Enqueue(context.Context, string, int64, string) (bool, error)
 }
 
+type TargetEnqueuer interface {
+	EnqueueFor(context.Context, string, string, string, string, int64, string) (bool, error)
+}
+
 type Receiver struct {
 	Secret     []byte
 	Repository string
+	SourceID   string
+	TargetID   string
 	Queue      Enqueuer
 	MaxBody    int64
 }
@@ -87,7 +93,12 @@ func (r Receiver) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			writeDummy(w, http.StatusUnprocessableEntity)
 			return
 		}
-		added, err := r.Queue.Enqueue(req.Context(), delivery, event.WorkflowRun.ID, strings.ToLower(event.WorkflowRun.HeadSHA))
+		var added bool
+		if targeted, ok := r.Queue.(TargetEnqueuer); ok && r.SourceID != "" && r.TargetID != "" {
+			added, err = targeted.EnqueueFor(req.Context(), delivery, r.SourceID, r.TargetID, r.Repository, event.WorkflowRun.ID, strings.ToLower(event.WorkflowRun.HeadSHA))
+		} else {
+			added, err = r.Queue.Enqueue(req.Context(), delivery, event.WorkflowRun.ID, strings.ToLower(event.WorkflowRun.HeadSHA))
+		}
 		if err != nil {
 			writeDummy(w, http.StatusServiceUnavailable)
 			return

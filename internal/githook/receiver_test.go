@@ -95,3 +95,41 @@ func TestReceiverQueueFailure(t *testing.T) {
 		t.Fatalf("got %d", got)
 	}
 }
+
+type fakeTargetQueue struct {
+	fakeQueue
+	source, target, repository string
+}
+
+func (f *fakeTargetQueue) EnqueueFor(_ context.Context, _ string, source, target, repository string, _ int64, _ string) (bool, error) {
+	f.source = source
+	f.target = target
+	f.repository = repository
+	return true, nil
+}
+func TestReceiverBindsVerifiedRouteToSourceAndTarget(t *testing.T) {
+	body := `{"action":"completed","repository":{"full_name":"gnailuy/sudoku"},"workflow_run":{"id":42,"head_sha":"0123456789012345678901234567890123456789"}}`
+	q := &fakeTargetQueue{}
+	r := Receiver{Secret: []byte("backend-secret"), Repository: "gnailuy/sudoku", SourceID: "backend", TargetID: "sudoku", Queue: q}
+	if got := request(t, r, http.MethodPost, "workflow_run", body, sign(body, "backend-secret")).Code; got != http.StatusAccepted {
+		t.Fatalf("got %d", got)
+	}
+	if q.source != "backend" || q.target != "sudoku" || q.repository != "gnailuy/sudoku" {
+		t.Fatalf("identity not bound: %+v", q)
+	}
+}
+func TestServiceSelectsSecretByExactPathBeforePayload(t *testing.T) {
+	body := `{"repository":{"full_name":"gnailuy/sudoku"}}`
+	q := &fakeQueue{}
+	s := Service{Routes: map[string]Receiver{"/hooks/backend": {Secret: []byte("backend"), Repository: "gnailuy/sudoku", Queue: q}, "/hooks/frontend": {Secret: []byte("frontend"), Repository: "gnailuy/sudoku-ui", Queue: q}}}
+	req := httptest.NewRequest(http.MethodPost, "/hooks/backend", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-GitHub-Event", "ping")
+	req.Header.Set("X-GitHub-Delivery", "12345678-1234-1234-1234-123456789abc")
+	req.Header.Set("X-Hub-Signature-256", sign(body, "frontend"))
+	out := httptest.NewRecorder()
+	s.ServeHTTP(out, req)
+	if out.Code != http.StatusUnauthorized {
+		t.Fatalf("wrong route secret accepted: %d", out.Code)
+	}
+}

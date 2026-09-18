@@ -93,3 +93,24 @@ func TestQueueRetainsFailedJobsForInspection(t *testing.T) {
 		t.Fatalf("failed job was claimable: %v", err)
 	}
 }
+
+func TestQueueCarriesSourceAndTargetIdentity(t *testing.T) {
+	q, err := OpenQueue(filepath.Join(t.TempDir(), "q.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer q.Close()
+	ctx := context.Background()
+	sha := "0123456789012345678901234567890123456789"
+	added, err := q.EnqueueFor(ctx, "42345678-1234-1234-1234-123456789abc", "backend", "sudoku", "gnailuy/sudoku", 42, sha)
+	if err != nil || !added {
+		t.Fatalf("added=%v err=%v", added, err)
+	}
+	job, err := q.Claim(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if job.SourceID != "backend" || job.TargetID != "sudoku" || job.Repository != "gnailuy/sudoku" {
+		t.Fatalf("identity lost: %+v", job)
+	}
+}

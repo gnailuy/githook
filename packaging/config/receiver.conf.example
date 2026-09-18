@@ -1,2 +1,4 @@
 # Copy to /etc/githook/receiver.conf and replace the placeholder.
 GITHOOK_WEBHOOK_SECRET=replace-with-webhook-secret
+
+# Multi-target mode defines one distinct GITHOOK_<SOURCE>_WEBHOOK_SECRET per source.

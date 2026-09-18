@@ -8,3 +8,5 @@ GITHOOK_SMOKE_URLS=http://127.0.0.1:8080/health
 # Optional: GITHOOK_WEBHOOK_PATH=/hooks/github
 # Optional: GITHOOK_RELEASES=/path/to/releases
 # Optional: GITHOOK_CURRENT=/path/to/current
+
+# Multi-target alternative: GITHOOK_TARGETS_FILE=~/.config/githook/targets.json
