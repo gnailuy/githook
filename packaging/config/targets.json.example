@@ -1,0 +1,47 @@
+{
+  "sources": [
+    {
+      "id": "site",
+      "target_id": "site",
+      "path": "/hooks/site",
+      "repository": "owner/site",
+      "workflow_name": "Build release",
+      "workflow_path": ".github/workflows/release.yml",
+      "branch": "main",
+      "artifact_prefix": "release-",
+      "kind": "static",
+      "webhook_secret_env": "GITHOOK_SITE_WEBHOOK_SECRET",
+      "github_token_env": "GITHUB_SITE_TOKEN"
+    },
+    {
+      "id": "sudoku_backend",
+      "target_id": "sudoku",
+      "path": "/hooks/sudoku-backend",
+      "repository": "gnailuy/sudoku",
+      "workflow_name": "CI",
+      "workflow_path": ".github/workflows/ci.yml",
+      "branch": "main",
+      "artifact_prefix": "sudoku-backend-",
+      "kind": "backend",
+      "webhook_secret_env": "GITHOOK_SUDOKU_BACKEND_SECRET",
+      "github_token_env": "GITHUB_SUDOKU_TOKEN"
+    },
+    {
+      "id": "sudoku_frontend",
+      "target_id": "sudoku",
+      "path": "/hooks/sudoku-frontend",
+      "repository": "gnailuy/sudoku-ui",
+      "workflow_name": "CI",
+      "workflow_path": ".github/workflows/ci.yml",
+      "branch": "master",
+      "artifact_prefix": "sudoku-frontend-",
+      "kind": "frontend",
+      "webhook_secret_env": "GITHOOK_SUDOKU_FRONTEND_SECRET",
+      "github_token_env": "GITHUB_SUDOKU_TOKEN"
+    }
+  ],
+  "targets": [
+    {"id":"site","kind":"static","releases_dir":"~/.local/share/githook/site/releases","current_link":"~/.local/share/githook/site/current","smoke_urls":["http://127.0.0.1:8080/health"]},
+    {"id":"sudoku","kind":"sudoku-pair","releases_dir":"~/.local/share/githook/sudoku/releases","current_link":"~/.local/share/githook/sudoku/current","smoke_urls":["http://127.0.0.1:8081/healthz"],"service":"sudoku-api.service"}
+  ]
+}

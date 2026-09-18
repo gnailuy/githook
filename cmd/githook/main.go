@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	gh "github.com/gnailuy/githook/internal/githook"
+	targets "github.com/gnailuy/githook/internal/targets"
 	"log"
 	"os"
 	"os/signal"
@@ -33,28 +34,75 @@ func main() {
 	webRoot := filepath.Join(home, ".local", "share", "githook")
 	d := gh.Deployer{ReleasesDir: env("GITHOOK_RELEASES", filepath.Join(webRoot, "releases")), CurrentLink: env("GITHOOK_CURRENT", filepath.Join(webRoot, "current")), SmokeURLs: split(os.Getenv("GITHOOK_SMOKE_URLS"))}
 	w := gh.Worker{Queue: q, GitHub: g, Deployer: d, WorkflowName: os.Getenv("GITHOOK_WORKFLOW_NAME"), WorkflowPath: os.Getenv("GITHOOK_WORKFLOW_PATH"), Branch: env("GITHOOK_BRANCH", "main"), ArtifactPrefix: env("GITHOOK_ARTIFACT_PREFIX", "release-")}
+	var multi *gh.MultiConfig
+	if path := os.Getenv("GITHOOK_TARGETS_FILE"); path != "" {
+		config, loadErr := gh.LoadMultiConfig(path)
+		if loadErr != nil {
+			fatal(loadErr.Error())
+		}
+		multi = &config
+	}
 	switch os.Args[1] {
 	case "serve":
+		if multi != nil {
+			service, buildErr := multi.Service(q, os.Getenv)
+			fatalIf(buildErr)
+			fatalIf(gh.ListenAndServe(ctx, env("GITHOOK_LISTEN", "127.0.0.1:4000"), service))
+			return
+		}
 		require("GITHOOK_REPOSITORY", g.Repository)
 		require("GITHOOK_WEBHOOK_SECRET", os.Getenv("GITHOOK_WEBHOOK_SECRET"))
 		r := gh.Receiver{Secret: []byte(os.Getenv("GITHOOK_WEBHOOK_SECRET")), Repository: g.Repository, Queue: q}
 		s := gh.Service{WebhookPath: env("GITHOOK_WEBHOOK_PATH", gh.DefaultWebhookPath), Receiver: r, Queue: q}
 		fatalIf(gh.ListenAndServe(ctx, env("GITHOOK_LISTEN", "127.0.0.1:4000"), s))
 	case "worker":
+		if multi != nil {
+			registry, buildErr := targets.Build(*multi, os.Getenv)
+			fatalIf(buildErr)
+			fatalIf((gh.MultiWorker{Queue: q, Registry: registry}).Run(ctx))
+			return
+		}
 		requireWorkerConfig(w)
 		fatalIf(w.Run(ctx))
 	case "deploy-run":
 		fs := flag.NewFlagSet("deploy-run", flag.ExitOnError)
 		sha := fs.String("sha", "", "expected full head SHA")
+		sourceID := fs.String("source", "", "configured source id")
 		_ = fs.Parse(os.Args[2:])
 		if fs.NArg() != 1 || *sha == "" {
-			fatal("usage: githook deploy-run --sha <sha> <run-id>")
+			fatal("usage: githook deploy-run [--source <id>] --sha <sha> <run-id>")
 		}
-		requireWorkerConfig(w)
 		id, e := strconv.ParseInt(fs.Arg(0), 10, 64)
 		fatalIf(e)
+		if multi != nil {
+			source, ok := multi.Source(*sourceID)
+			if !ok {
+				fatal("--source must name a configured source")
+			}
+			registry, buildErr := targets.Build(*multi, os.Getenv)
+			fatalIf(buildErr)
+			fatalIf((gh.MultiWorker{Queue: q, Registry: registry}).Process(ctx, gh.Job{SourceID: source.ID, TargetID: source.TargetID, Repository: source.Repository, RunID: id, HeadSHA: *sha}))
+			return
+		}
+		requireWorkerConfig(w)
 		fatalIf(w.ProcessRun(ctx, id, *sha))
 	case "reconcile":
+		if multi != nil {
+			registry, buildErr := targets.Build(*multi, os.Getenv)
+			fatalIf(buildErr)
+			worker := gh.MultiWorker{Queue: q, Registry: registry}
+			for _, source := range multi.Sources {
+				job, latestErr := multi.LatestJob(ctx, source.ID, os.Getenv)
+				fatalIf(latestErr)
+				if old, stateErr := q.RefuseOlderFor(ctx, job.TargetID+":"+job.SourceID, job.RunID); stateErr != nil {
+					fatalIf(stateErr)
+				} else if old {
+					continue
+				}
+				fatalIf(worker.Process(ctx, job))
+			}
+			return
+		}
 		requireWorkerConfig(w)
 		fatalIf(reconcile(ctx, w))
 	default:

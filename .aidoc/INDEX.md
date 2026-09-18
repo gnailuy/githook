@@ -3,6 +3,8 @@ domain: Architecture
 status: Active
 entry_points:
   - cmd/githook/main.go
+  - internal/githook/config.go
+  - internal/targets/registry.go
 dependencies: []
 ---
 
@@ -20,6 +22,6 @@ Githook is a self-contained, host-local GitHub Actions artifact deployer. This i
 
 ## Reading Chains
 
-- **Understand or change Githook:** Architecture → relevant `internal/githook/` package → tests.
-- **Install or recover Githook:** Architecture → Host Bootstrap → `packaging/config/` → `packaging/systemd/`.
+- **Understand or change Githook:** Architecture → `internal/githook/config.go` for source/target registration → relevant adapter or queue package → tests.
+- **Install or recover Githook:** Architecture → Host Bootstrap → legacy `runtime.conf.example` or multi-target `targets.json.example` → `packaging/systemd/`.
 - **Perform daily maintenance:** Operations → the referenced command or implementation entry point.

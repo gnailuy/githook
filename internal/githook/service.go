@@ -13,6 +13,7 @@ const queuePath = "/maintenance/queue"
 type Service struct {
 	WebhookPath string
 	Receiver    Receiver
+	Routes      map[string]Receiver
 	Queue       *Queue
 }
 
@@ -21,7 +22,11 @@ func (s Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if webhookPath == "" {
 		webhookPath = DefaultWebhookPath
 	}
-	if r.URL.Path == webhookPath {
+	if receiver, ok := s.Routes[r.URL.Path]; ok {
+		receiver.ServeHTTP(w, r)
+		return
+	}
+	if len(s.Routes) == 0 && r.URL.Path == webhookPath {
 		s.Receiver.ServeHTTP(w, r)
 		return
 	}

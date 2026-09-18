@@ -128,3 +128,9 @@ func (w Worker) Run(ctx context.Context) error {
 		}
 	}
 }
+
+// Permanent marks a validation failure that must remain inspectable without retry.
+func Permanent(err error) error { return permanent(err) }
+
+// IsPermanent reports whether an adapter classified an error as non-retryable.
+func IsPermanent(err error) bool { return isPermanent(err) }

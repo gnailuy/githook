@@ -29,17 +29,17 @@ The queue service has no application authentication because it listens only on l
 
 ## Runtime Ownership
 
-`~/.config/githook/runtime.conf` owns non-secret deployment policy. The queue database defaults to `~/.githook/githook.db`; release directories and the `current` symlink default to `~/.local/share/githook/`. `OpenQueue` creates the private queue directory when needed. Repository ignore rules reject common SQLite database, journal, and WAL filenames, so runtime queue state cannot be added accidentally. A static-file server may read the configured release tree but does not belong to Githook and needs no write access.
+`~/.config/githook/runtime.conf` owns legacy non-secret deployment policy or points to the user-owned multi-target JSON. `packaging/config/targets.json.example` documents source routes, adapter kinds, credential environment names, and per-target release roots. The queue database defaults to `~/.githook/githook.db`; release directories and the `current` symlink default to `~/.local/share/githook/`. `OpenQueue` creates the private queue directory when needed. Repository ignore rules reject common SQLite database, journal, and WAL filenames, so runtime queue state cannot be added accidentally. A static-file server may read the configured release tree but does not belong to Githook and needs no write access.
 
-`/etc/githook/receiver.conf` contains only `GITHOOK_WEBHOOK_SECRET`; `/etc/githook/worker.conf` contains only `GITHUB_TOKEN`. Each unit reads only its own credential file. Host Bootstrap is the canonical source for creating these files and installing the binary and user units.
+`/etc/githook/receiver.conf` contains only webhook-secret variables; `/etc/githook/worker.conf` contains only GitHub token variables. Legacy installations use `GITHOOK_WEBHOOK_SECRET` and `GITHUB_TOKEN`; multi-target installations name one secret per source and may use distinct repository-scoped tokens. Each unit reads only its own credential file. Host Bootstrap is the canonical source for creating these files and installing the binary and user units.
 
 Host-specific path permissions belong in user-level systemd drop-ins, not the credential files.
 
-The external reverse proxy forwards only `POST /hooks/github` (or the configured webhook path) to the loopback listener. The proxy may be Caddy, Nginx, IIS, or another HTTP proxy; its configuration belongs to the consuming deployment, not this project. The proxy must not expose maintenance paths or receive write access to the queue, release directories, or credential files.
+The external reverse proxy forwards only `POST` on each configured exact webhook path to the loopback listener. The proxy may be Caddy, Nginx, IIS, or another HTTP proxy; its configuration belongs to the consuming deployment, not this project. The proxy must not expose maintenance paths or receive write access to the queue, release directories, or credential files.
 
 ## Configuration Ownership
 
-`cmd/githook.main` defines host-neutral defaults for the webhook path, loopback address, queue path, branch, artifact prefix, and release paths. Repository and workflow identity are required configuration. `~/.config/githook/runtime.conf` owns non-secret deployment policy, while `/etc/githook/*.conf` contains only credentials. This keeps credential files from becoming duplicate application configuration.
+`cmd/githook.main` preserves host-neutral single-target defaults and activates multi-target mode only when `GITHOOK_TARGETS_FILE` is set. `MultiConfig.Validate` rejects duplicate paths, duplicate identities, unknown targets, incomplete adapter source sets, or secret values hidden in undeclared fields. `~/.config/githook/runtime.conf` owns non-secret deployment policy, while `/etc/githook/*.conf` contains only credentials. This keeps credential files from becoming duplicate application configuration.
 
 `Worker.Run` is the source of truth for claim recovery, retry classification, and retry timing; `Queue` is the source of truth for serialization and retained failure state.
 
@@ -57,7 +57,7 @@ Stop the worker before maintenance when an operator needs a stable pending set. 
 
 ## How to Recover
 
-`githook deploy-run --sha <full-sha> <run-id>` performs the same authoritative verification and deployment path for manual replay. Reconciliation can independently deploy a newer eligible run without deleting failed evidence.
+`githook deploy-run --source <source-id> --sha <full-sha> <run-id>` performs the same authoritative verification and deployment path for manual replay. Reconciliation can independently deploy a newer eligible run without deleting failed evidence.
 
 Rotate the webhook secret by installing the new receiver credential before updating the one existing GitHub webhook, then prove a signed `ping`. Rotate the GitHub token independently because the queue service never uses it.
 

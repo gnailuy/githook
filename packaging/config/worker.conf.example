@@ -1,2 +1,4 @@
 # Copy to /etc/githook/worker.conf and replace the placeholder.
 GITHUB_TOKEN=replace-with-read-only-actions-token
+
+# Multi-target mode defines repository-scoped GITHUB_<SOURCE>_TOKEN values as needed.

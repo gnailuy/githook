@@ -4,6 +4,7 @@ status: Active
 entry_points:
   - cmd/githook/main.go
   - packaging/config/runtime.conf.example
+  - packaging/config/targets.json.example
   - packaging/systemd/githook-receiver.service
 dependencies:
   - .aidoc/architecture.md
@@ -32,23 +33,23 @@ Hostnames, public routes, release paths, service accounts, and credentials are d
 - A supported Linux host with a non-root service account, key-only administrative access, current security updates, and a host firewall.
 - Go 1.25 or newer for a source build, or a binary built from a reviewed repository commit.
 - A static web server that can read the chosen active-release path without write access.
-- One GitHub repository workflow that builds an immutable artifact matching the manifest and checksum contract in `VerifyBundle`.
+- One or more GitHub repository workflows that build immutable artifacts matching `VerifyBundle` or the Sudoku component manifests verified by `GitHubPairResolver.Resolve`.
 - A human operator who can generate and enter a new webhook secret and a GitHub credential scoped only to read Actions runs and artifacts for the configured repository. Credentials are not repository files and must not be supplied through chat, logs, or source control.
 
 ## Install Repository-Owned Files
 
 1. Build `./cmd/githook` from a reviewed commit after `go test ./...`, `go vet ./...`, and `go build ./cmd/githook` pass.
 2. Install the binary as `~/.local/bin/githook` for the service account.
-3. Copy `packaging/config/runtime.conf.example` to `~/.config/githook/runtime.conf`. Replace repository, workflow name and path, branch, artifact prefix, smoke URLs, and optional deployment paths with host-owned values.
-4. Create `/etc/githook/receiver.conf` and `/etc/githook/worker.conf` from the templates in `packaging/config/`, then have the human operator enter newly generated values through a trusted host credential workflow. The receiver file receives only the webhook secret; the worker file receives only the GitHub token. Restrict both files to root and a dedicated read-only credentials group that contains the service account. Do not ask an AI agent to read, copy, or relay either value.
-5. Copy `packaging/systemd/` into the service account's `~/.config/systemd/user/`. If releases are outside the default user-owned directory, add that exact release root to the worker and reconciliation units' `ReadWritePaths` through host-owned drop-ins.
+3. For one static target, copy `packaging/config/runtime.conf.example` to `~/.config/githook/runtime.conf` and set the repository, workflow, branch, artifact, smoke, and release policy. For multiple targets, copy `packaging/config/targets.json.example` to a user-owned path, set `GITHOOK_TARGETS_FILE` in `runtime.conf`, and configure exact source routes plus isolated target release roots. The JSON stores environment-variable names for credentials, never credential values.
+4. Create `/etc/githook/receiver.conf` and `/etc/githook/worker.conf` from the templates in `packaging/config/`, then have the human operator enter newly generated values through a trusted host credential workflow. The receiver file receives one distinct webhook secret per configured source; the worker file receives only source-scoped GitHub artifact credentials. A token may be shared only when its repository scope intentionally covers those sources. Restrict both files to root and a dedicated read-only credentials group that contains the service account. Do not ask an AI agent to read, copy, or relay either value.
+5. Copy `packaging/systemd/` into the service account's `~/.config/systemd/user/`. If releases or the Sudoku service pointer are outside the default user-owned directory, add that exact release root to the worker and reconciliation units' `ReadWritePaths` through host-owned drop-ins.
 6. Reload the user manager, enable and start the receiver and worker, and enable the reconciliation timer. Enable lingering for the service account so the user manager starts at boot without an interactive session.
 
 ## Connect the Public Adapter
 
 Bind `GITHOOK_LISTEN` to a loopback address. Configure the external reverse proxy to forward only `POST` on the exact `GITHOOK_WEBHOOK_PATH`; do not forward the listener root or maintenance paths.
 
-Configure the repository's one existing webhook with that public HTTPS route, JSON content type, TLS verification, the receiver's matching secret, and only workflow-run events. Never put the webhook secret or GitHub token in command arguments, logs, unit files, source control, or the non-secret runtime file.
+Configure each repository webhook with its exact public HTTPS route, JSON content type, TLS verification, route-matching secret, and only workflow-run events. Never put the webhook secret or GitHub token in command arguments, logs, unit files, source control, or the non-secret runtime file.
 
 ## Prove the Installation
 
@@ -62,7 +63,7 @@ Configure the repository's one existing webhook with that public HTTPS route, JS
 
 ## Recover Without a Webhook
 
-Use `githook deploy-run --sha <full-sha> <run-id>` under the worker configuration when a known successful run must be replayed. The command performs the same authoritative GitHub lookup, artifact verification, extraction, activation, and smoke path as queued work.
+Use `githook deploy-run --source <source-id> --sha <full-sha> <run-id>` under multi-target worker configuration, or omit `--source` for legacy single-target configuration, when a known successful run must be replayed. The command performs the same authoritative GitHub lookup, artifact verification, extraction, activation, and smoke path as queued work.
 
 Use `githook reconcile` when the host must discover the newest eligible successful run from the configured workflow and branch. Reconciliation is also the boot/daily safety net for a missed webhook; it does not make webhook payloads authoritative.
 
