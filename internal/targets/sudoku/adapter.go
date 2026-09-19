@@ -389,7 +389,15 @@ func sealRelease(root string) error {
 		if entry.IsDir() {
 			return os.Chmod(path, 0555)
 		}
-		return os.Chmod(path, 0444)
+		mode := os.FileMode(0444)
+		info, infoErr := entry.Info()
+		if infoErr != nil {
+			return infoErr
+		}
+		if info.Mode().Perm()&0111 != 0 {
+			mode = 0555
+		}
+		return os.Chmod(path, mode)
 	})
 }
 

@@ -106,6 +106,20 @@ func TestVerifySudokuComponentsAndActivatePair(t *testing.T) {
 			t.Fatalf("missing %s: %v", path, err)
 		}
 	}
+	backendInfo, err := os.Stat(filepath.Join(target, "backend/sudoku"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if backendInfo.Mode().Perm() != 0555 {
+		t.Fatalf("backend mode=%#o want 0555", backendInfo.Mode().Perm())
+	}
+	frontendInfo, err := os.Stat(filepath.Join(target, "frontend/index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if frontendInfo.Mode().Perm() != 0444 {
+		t.Fatalf("frontend mode=%#o want 0444", frontendInfo.Mode().Perm())
+	}
 	if err = activator.Activate(context.Background(), pair); err != nil {
 		t.Fatal(err)
 	}
