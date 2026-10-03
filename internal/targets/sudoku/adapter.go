@@ -263,7 +263,14 @@ type DirectoryActivator struct {
 	ReleasesDir, CurrentLink string
 	SmokeURLs                []string
 	Service                  ServiceController
+	smokeAttempts            int
+	smokeRetryDelay          time.Duration
 }
+
+const (
+	defaultSmokeAttempts   = 26
+	defaultSmokeRetryDelay = 200 * time.Millisecond
+)
 
 func (a DirectoryActivator) Activate(ctx context.Context, pair SudokuPair) error {
 	if err := validateSudokuPair(pair); err != nil {
@@ -346,7 +353,7 @@ func (a DirectoryActivator) activateExisting(ctx context.Context, target string)
 			return a.rollback(previous, err)
 		}
 	}
-	if err = smoke(ctx, a.SmokeURLs); err != nil {
+	if err = a.smokeUntilReady(ctx); err != nil {
 		return a.rollback(previous, err)
 	}
 	return nil
@@ -402,6 +409,34 @@ func sealRelease(root string) error {
 }
 
 var servicePattern = regexp.MustCompile(`^[a-zA-Z0-9_.@-]+\.service$`)
+
+func (a DirectoryActivator) smokeUntilReady(ctx context.Context) error {
+	attempts := a.smokeAttempts
+	if attempts <= 0 {
+		attempts = defaultSmokeAttempts
+	}
+	delay := a.smokeRetryDelay
+	if delay <= 0 {
+		delay = defaultSmokeRetryDelay
+	}
+	var lastErr error
+	for attempt := 1; attempt <= attempts; attempt++ {
+		if lastErr = smoke(ctx, a.SmokeURLs); lastErr == nil {
+			return nil
+		}
+		if attempt == attempts {
+			break
+		}
+		timer := time.NewTimer(delay)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return fmt.Errorf("smoke readiness wait stopped: %w (last check: %v)", ctx.Err(), lastErr)
+		case <-timer.C:
+		}
+	}
+	return fmt.Errorf("smoke readiness did not succeed after %d attempts: %w", attempts, lastErr)
+}
 
 func smoke(ctx context.Context, urls []string) error {
 	client := &http.Client{Timeout: 15 * time.Second}
