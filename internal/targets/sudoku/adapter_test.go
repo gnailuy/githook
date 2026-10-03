@@ -127,6 +127,44 @@ func TestVerifySudokuComponentsAndActivatePair(t *testing.T) {
 		t.Fatalf("idempotent activation restarted service %d times", service.restarts)
 	}
 }
+func TestSudokuActivationWaitsForRestartedService(t *testing.T) {
+	root := t.TempDir()
+	t.Cleanup(func() {
+		_ = filepath.Walk(root, func(path string, _ os.FileInfo, _ error) error { _ = os.Chmod(path, 0700); return nil })
+	})
+	previous := filepath.Join(root, "previous")
+	if err := os.MkdirAll(previous, 0755); err != nil {
+		t.Fatal(err)
+	}
+	current := filepath.Join(root, "current")
+	if err := os.Symlink(previous, current); err != nil {
+		t.Fatal(err)
+	}
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests++
+		if requests < 3 {
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+	service := &fakeServiceController{}
+	backendSHA := "0123456789012345678901234567890123456789"
+	frontendSHA := "1123456789012345678901234567890123456789"
+	pair := SudokuPair{Backend: SudokuComponent{SourceID: "backend", Repository: "gnailuy/sudoku", Kind: "backend", RunID: 1, SHA: backendSHA, Files: map[string][]byte{"sudoku": []byte("binary")}}, Frontend: SudokuComponent{SourceID: "frontend", Repository: "gnailuy/sudoku-ui", Kind: "frontend", RunID: 2, SHA: frontendSHA, Files: map[string][]byte{"site/index.html": []byte("html")}}}
+	if err := (DirectoryActivator{ReleasesDir: filepath.Join(root, "releases"), CurrentLink: current, SmokeURLs: []string{server.URL}, Service: service}).Activate(context.Background(), pair); err != nil {
+		t.Fatalf("transient startup failure rolled back activation: %v", err)
+	}
+	if requests != 3 {
+		t.Fatalf("smoke requests=%d want 3", requests)
+	}
+	if service.restarts != 1 {
+		t.Fatalf("service restarts=%d want 1", service.restarts)
+	}
+}
+
 func TestSudokuActivationRollbackDoesNotTouchNeighbor(t *testing.T) {
 	root := t.TempDir()
 	t.Cleanup(func() {
@@ -150,7 +188,7 @@ func TestSudokuActivationRollbackDoesNotTouchNeighbor(t *testing.T) {
 	backendSHA := "0123456789012345678901234567890123456789"
 	frontendSHA := "1123456789012345678901234567890123456789"
 	pair := SudokuPair{Backend: SudokuComponent{SourceID: "backend", Repository: "gnailuy/sudoku", Kind: "backend", RunID: 1, SHA: backendSHA, Files: map[string][]byte{"sudoku": []byte("binary")}}, Frontend: SudokuComponent{SourceID: "frontend", Repository: "gnailuy/sudoku-ui", Kind: "frontend", RunID: 2, SHA: frontendSHA, Files: map[string][]byte{"site/index.html": []byte("html")}}}
-	err := (DirectoryActivator{ReleasesDir: filepath.Join(root, "releases"), CurrentLink: current, SmokeURLs: []string{server.URL}, Service: service}).Activate(context.Background(), pair)
+	err := (DirectoryActivator{ReleasesDir: filepath.Join(root, "releases"), CurrentLink: current, SmokeURLs: []string{server.URL}, Service: service, smokeAttempts: 1}).Activate(context.Background(), pair)
 	if err == nil {
 		t.Fatal("smoke failure accepted")
 	}
